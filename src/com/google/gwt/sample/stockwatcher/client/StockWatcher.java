@@ -16,9 +16,12 @@ import com.google.gwt.user.client.ui.VerticalPanel;
 import com.google.gwt.event.dom.client.KeyCodes;
 import com.google.gwt.event.dom.client.KeyDownEvent;
 import com.google.gwt.user.client.Window;
+import com.google.gwt.user.client.Random;
+import com.google.gwt.user.client.Timer;
 
 public class StockWatcher implements EntryPoint {
 
+	private static final int REFRESH_INTERVAL = 5000;
 	private VerticalPanel mainPanel = new VerticalPanel();
 	private FlexTable stocksFlexTable = new FlexTable();
 	private HorizontalPanel addPanel = new HorizontalPanel();
@@ -52,6 +55,15 @@ public class StockWatcher implements EntryPoint {
 		// Move cursor focus to the input box.
 		newSymbolTextBox.setFocus(true);
 
+		// Setup timer to refresh list automatically.
+		Timer refreshTimer = new Timer() {
+			@Override
+			public void run() {
+				refreshWatchList();
+			}
+		};
+		refreshTimer.scheduleRepeating(REFRESH_INTERVAL);
+
 		// Listen for mouse events on the Add button.
 		addStockButton.addClickHandler(new ClickHandler() {
 			public void onClick(ClickEvent event) {
@@ -79,18 +91,60 @@ public class StockWatcher implements EntryPoint {
 			newSymbolTextBox.selectAll();
 			return;
 		}
-		
-		//Don't add the stock if its already in the table
-		
 
 		newSymbolTextBox.setText("");
 
 		// Don't add the stock if it's already in the table.
 		if (stocks.contains(symbol))
 			return;
-		
-		// TODO Add the stock to the table
-		// TODO Add a button to remove this stock from the table.
-		// TODO Get the stock price.
+
+		// Add the stock to the table
+		int row = stocksFlexTable.getRowCount();
+		stocks.add(symbol);
+		stocksFlexTable.setText(row, 0, symbol);
+
+		// Add a button to remove a stock from the table.
+		Button removeStockButton = new Button("x");
+		removeStockButton.addClickHandler(new ClickHandler() {
+			public void onClick(ClickEvent event) {
+				int removedIndex = stocks.indexOf(symbol);
+				stocks.remove(removedIndex);
+				stocksFlexTable.removeRow(removedIndex + 1);
+			}
+		});
+		stocksFlexTable.setWidget(row, 3, removeStockButton);
 	}
-}
+
+	// Get the stock price.
+	private void refreshWatchList() {
+		final double MAX_PRICE = 100.0; // $100.00
+		final double MAX_PRICE_CHANGE = 0.02; // +/- 2%
+
+		StockPrice[] prices = new StockPrice[stocks.size()];
+		for (int i = 0; i < stocks.size(); i++) {
+			double price = Random.nextDouble() * MAX_PRICE;
+			double change = price * MAX_PRICE_CHANGE * (Random.nextDouble() * 2.0 - 1.0);
+
+			prices[i] = new StockPrice(stocks.get(i), price, change);
+		}
+
+		updateTable(prices);
+	}
+
+    /**
+     * Update the Price and Change fields all the rows in the stock table.
+     *
+     * @param prices
+     *          Stock data for all rows.
+     */
+    private void updateTable(StockPrice[] prices) {
+      for (int i = 0; i < prices.length; i++) {
+        updateTable(prices[i]);
+      }
+    }
+
+	private void updateTable(StockPrice stockPrice) {
+		// TODO Auto-generated method stub
+		
+	}
+} 
